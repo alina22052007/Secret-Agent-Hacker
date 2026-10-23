@@ -1,0 +1,559 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#05080d">
+  <title>Secret Agent: Terminal Zero</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #05080d;
+      --panel: rgba(11, 18, 25, .84);
+      --panel-2: rgba(14, 23, 31, .9);
+      --line: rgba(114, 255, 190, .16);
+      --green: #71ffb4;
+      --green-bright: #b0ffd5;
+      --cyan: #56eaff;
+      --purple: #bc8bff;
+      --muted: #78918a;
+      --text: #dcf5e9;
+      --danger: #ff758f;
+      --mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+      --sans: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    * { box-sizing: border-box; }
+    html { min-width: 320px; background: var(--bg); }
+    body {
+      min-height: 100vh; margin: 0; color: var(--text); font-family: var(--sans);
+      background:
+        radial-gradient(ellipse at 50% -20%, rgba(22, 103, 76, .22), transparent 55%),
+        radial-gradient(ellipse at 100% 80%, rgba(31, 61, 101, .13), transparent 38%),
+        var(--bg);
+    }
+    button, input { font: inherit; }
+    button { color: inherit; }
+    #rain {
+      position: fixed; inset: 0; z-index: 0; width: 100%; height: 100%;
+      opacity: .16; pointer-events: none;
+    }
+    .scanlines {
+      position: fixed; inset: 0; z-index: 1; pointer-events: none; opacity: .12;
+      background: repeating-linear-gradient(0deg, transparent 0 3px, rgba(0,0,0,.36) 4px);
+    }
+    .shell { position: relative; z-index: 2; max-width: 1220px; margin: auto; padding: 26px 30px 42px; }
+    .creator {
+      display: flex; align-items: center; justify-content: center; min-height: 35px;
+      color: #a5c6b7; font: 600 11px var(--mono); letter-spacing: .16em; text-align: center;
+      text-transform: uppercase;
+    }
+    .topbar {
+      display: flex; align-items: center; justify-content: space-between; gap: 18px;
+      margin: 18px 0 34px; padding: 15px 18px; border: 1px solid var(--line); border-radius: 14px;
+      background: rgba(7, 13, 18, .7); backdrop-filter: blur(14px);
+      box-shadow: 0 14px 50px rgba(0,0,0,.22);
+    }
+    .brand { display: flex; align-items: center; gap: 12px; min-width: 0; }
+    .brand-mark {
+      display: grid; place-items: center; width: 38px; height: 38px; flex: 0 0 auto;
+      border: 1px solid rgba(113,255,180,.5); border-radius: 11px;
+      color: var(--green); background: rgba(113,255,180,.08);
+      box-shadow: 0 0 24px rgba(113,255,180,.12), inset 0 0 15px rgba(113,255,180,.07);
+      font: 700 18px var(--mono);
+    }
+    .brand-name { font: 700 12px var(--mono); letter-spacing: .17em; color: var(--green-bright); }
+    .brand-sub { margin-top: 4px; color: var(--muted); font: 10px var(--mono); letter-spacing: .12em; }
+    .top-actions { display: flex; align-items: center; gap: 10px; }
+    .status-pill {
+      display: inline-flex; align-items: center; gap: 8px; padding: 8px 11px; border: 1px solid var(--line);
+      border-radius: 99px; color: #b8d8c8; background: rgba(113,255,180,.04); font: 10px var(--mono);
+      letter-spacing: .09em; white-space: nowrap;
+    }
+    .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--green); box-shadow: 0 0 12px var(--green); animation: pulse 1.8s infinite; }
+    .icon-button, .btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: 9px;
+      min-height: 38px; padding: 0 13px; border: 1px solid var(--line); border-radius: 9px;
+      background: rgba(255,255,255,.025); cursor: pointer; transition: .2s ease;
+    }
+    .icon-button:hover, .btn:hover { border-color: rgba(113,255,180,.55); background: rgba(113,255,180,.09); transform: translateY(-1px); }
+    .icon-button:active, .btn:active { transform: scale(.97); }
+    .icon-button { width: 38px; padding: 0; font-size: 15px; }
+    .btn { color: var(--green-bright); font: 600 10px var(--mono); letter-spacing: .1em; text-transform: uppercase; }
+    .eyebrow { color: var(--green); font: 600 10px var(--mono); letter-spacing: .22em; text-transform: uppercase; }
+    .hero { display: flex; align-items: end; justify-content: space-between; gap: 24px; margin: 0 0 25px; }
+    h1 { margin: 10px 0 9px; font-size: clamp(31px, 5vw, 52px); line-height: 1; letter-spacing: -.055em; font-weight: 720; }
+    h1 span { color: var(--green); text-shadow: 0 0 30px rgba(113,255,180,.25); }
+    .lede { max-width: 575px; margin: 0; color: #90aaa0; font-size: 13px; line-height: 1.65; }
+    .simulation-tag { padding: 9px 12px; border: 1px solid rgba(188,139,255,.28); border-radius: 8px; color: #d1b6ff; background: rgba(188,139,255,.07); font: 10px var(--mono); letter-spacing: .1em; white-space: nowrap; }
+    .dashboard { display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(290px, .85fr); gap: 16px; }
+    .panel {
+      border: 1px solid var(--line); border-radius: 14px; background: var(--panel);
+      box-shadow: 0 18px 60px rgba(0,0,0,.2); backdrop-filter: blur(13px); overflow: hidden;
+    }
+    .panel-head {
+      min-height: 48px; display: flex; align-items: center; justify-content: space-between; gap: 12px;
+      padding: 0 16px; border-bottom: 1px solid rgba(114,255,190,.11); background: rgba(255,255,255,.015);
+    }
+    .panel-title { display: flex; align-items: center; gap: 9px; font: 600 10px var(--mono); letter-spacing: .13em; color: #c8e7d8; text-transform: uppercase; }
+    .panel-title .glyph { color: var(--green); font-size: 13px; }
+    .panel-meta { color: #678177; font: 9px var(--mono); letter-spacing: .1em; }
+    .terminal { display: flex; flex-direction: column; min-height: 384px; }
+    .terminal-output {
+      flex: 1; min-height: 276px; max-height: 380px; overflow: auto; padding: 17px 18px 10px;
+      color: #9bcdb3; font: 11px/1.8 var(--mono); scrollbar-color: rgba(113,255,180,.25) transparent;
+    }
+    .line { min-height: 20px; overflow-wrap: anywhere; animation: appear .25s ease both; }
+    .line.system { color: #6e9783; }
+    .line.success { color: var(--green); }
+    .line.accent { color: var(--cyan); }
+    .line.warn { color: #e7c487; }
+    .line.error { color: var(--danger); }
+    .prompt-row { display: flex; align-items: center; gap: 9px; margin: 0 14px 14px; padding: 0 12px; min-height: 43px; border: 1px solid rgba(113,255,180,.23); border-radius: 9px; background: rgba(3,9,12,.72); }
+    .prompt { color: var(--green); font: 700 11px var(--mono); white-space: nowrap; }
+    #command { width: 100%; border: 0; outline: 0; color: var(--green-bright); background: transparent; font: 11px var(--mono); }
+    #command::placeholder { color: #4a6659; }
+    .enter-hint { color: #557164; font: 9px var(--mono); white-space: nowrap; }
+    .right-stack { display: grid; gap: 16px; align-content: start; }
+    .mission-body { padding: 14px 15px 15px; }
+    .mission-copy { margin: 0 0 14px; color: #91aaa1; font-size: 11px; line-height: 1.6; }
+    .mission-steps { display: grid; gap: 7px; margin: 13px 0 15px; color: #718d7e; font: 9px var(--mono); }
+    .mission-step { display: flex; align-items: center; gap: 8px; }
+    .mission-step .step-icon { width: 13px; color: #557164; text-align: center; }
+    .mission-step.done { color: var(--green); }
+    .mission-step.done .step-icon { color: var(--green); }
+    .mission-start { width: 100%; }
+    .tools { padding: 14px; display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
+    .tool {
+      position: relative; min-height: 84px; display: flex; flex-direction: column; align-items: flex-start; justify-content: space-between;
+      padding: 12px; border: 1px solid rgba(114,255,190,.13); border-radius: 10px; background: rgba(255,255,255,.018);
+      text-align: left; cursor: pointer; transition: .22s ease; overflow: hidden;
+    }
+    .tool::after { content: ""; position: absolute; inset: auto 0 0; height: 1px; background: var(--tool-color, var(--green)); transform: scaleX(0); transform-origin: left; transition: transform .3s ease; }
+    .tool:hover { border-color: color-mix(in srgb, var(--tool-color, var(--green)) 48%, transparent); background: rgba(113,255,180,.055); transform: translateY(-2px); }
+    .tool:hover::after { transform: scaleX(1); }
+    .tool:active { transform: scale(.97); }
+    .tool-icon { color: var(--tool-color, var(--green)); font: 15px var(--mono); }
+    .tool-name { color: #d8eee2; font: 600 9px var(--mono); letter-spacing: .1em; }
+    .tool-desc { color: #6c8879; font: 9px var(--mono); }
+    .metrics { padding: 15px 16px 16px; }
+    .metric { margin-bottom: 15px; }
+    .metric:last-child { margin-bottom: 0; }
+    .metric-label { display: flex; justify-content: space-between; gap: 10px; margin-bottom: 8px; color: #95b5a3; font: 9px var(--mono); letter-spacing: .08em; }
+    .metric-value { color: var(--green); }
+    .bar { height: 5px; overflow: hidden; border-radius: 99px; background: rgba(255,255,255,.07); }
+    .bar > i { display: block; height: 100%; width: 0; border-radius: inherit; background: linear-gradient(90deg, #36d78d, #a0ffd0); box-shadow: 0 0 14px rgba(113,255,180,.6); transition: width .75s cubic-bezier(.2,.8,.2,1); }
+    .bar.cyan > i { background: linear-gradient(90deg, #34b8d6, #73efff); box-shadow: 0 0 14px rgba(86,234,255,.55); }
+    .bar.purple > i { background: linear-gradient(90deg, #9270e7, #d0a8ff); box-shadow: 0 0 14px rgba(188,139,255,.55); }
+    .signal { display: flex; align-items: center; justify-content: space-between; padding: 12px 15px; border-top: 1px solid rgba(114,255,190,.1); color: #78968a; font: 9px var(--mono); }
+    .signal b { color: var(--cyan); font-weight: 500; }
+    .footnote { display: flex; justify-content: space-between; gap: 14px; margin: 18px 2px 0; color: #52695f; font: 9px var(--mono); letter-spacing: .07em; }
+    .footnote strong { color: #789989; font-weight: 500; }
+    .modal-wrap {
+      position: fixed; inset: 0; z-index: 5; display: grid; place-items: center; padding: 20px;
+      background: rgba(1,4,7,.78); backdrop-filter: blur(10px); opacity: 0; visibility: hidden; transition: .25s ease;
+    }
+    .modal-wrap.open { opacity: 1; visibility: visible; }
+    .modal {
+      width: min(440px, 100%); padding: 22px; border: 1px solid rgba(86,234,255,.35); border-radius: 15px;
+      background: #09121a; box-shadow: 0 20px 80px rgba(0,0,0,.55), 0 0 45px rgba(86,234,255,.08);
+      transform: translateY(12px) scale(.98); transition: .25s ease;
+    }
+    .open .modal { transform: translateY(0) scale(1); }
+    .modal-top { display: flex; justify-content: space-between; align-items: center; }
+    .modal h2 { margin: 16px 0 7px; color: var(--cyan); font: 700 18px var(--mono); letter-spacing: .04em; }
+    .modal p { color: #91aaa1; font-size: 12px; line-height: 1.6; }
+    .cipher-text { margin: 17px 0; padding: 16px; border: 1px dashed rgba(86,234,255,.3); border-radius: 9px; background: rgba(86,234,255,.04); color: #d7fbff; text-align: center; font: 700 17px var(--mono); letter-spacing: .2em; }
+    .cipher-entry { display: flex; gap: 8px; margin-top: 13px; }
+    .cipher-entry input { min-width: 0; flex: 1; padding: 11px 12px; border: 1px solid var(--line); border-radius: 8px; outline: 0; color: var(--text); background: #050b10; font: 11px var(--mono); text-transform: uppercase; }
+    .cipher-entry input:focus { border-color: var(--cyan); }
+    .cipher-feedback { min-height: 18px; margin-top: 10px; font: 10px var(--mono); color: var(--green); }
+    .close-button { width: 31px; height: 31px; border: 1px solid var(--line); border-radius: 8px; background: transparent; cursor: pointer; }
+    .toast {
+      position: fixed; right: 24px; bottom: 22px; z-index: 8; padding: 12px 15px; border: 1px solid rgba(113,255,180,.35);
+      border-radius: 9px; color: var(--green-bright); background: rgba(7,18,14,.96); box-shadow: 0 10px 35px rgba(0,0,0,.4);
+      font: 10px var(--mono); opacity: 0; transform: translateY(10px); pointer-events: none; transition: .25s ease;
+    }
+    .toast.show { opacity: 1; transform: translateY(0); }
+    @keyframes pulse { 50% { opacity: .4; box-shadow: 0 0 4px var(--green); } }
+    @keyframes appear { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+    @media (max-width: 760px) {
+      .shell { padding: 17px 16px 30px; }
+      .topbar { margin: 15px 0 27px; padding: 12px; }
+      .dashboard { grid-template-columns: 1fr; }
+      .right-stack { grid-template-columns: 1fr 1fr; align-items: start; }
+      .hero { align-items: flex-start; flex-direction: column; gap: 14px; }
+    }
+    @media (max-width: 520px) {
+      .status-pill { display: none; }
+      .right-stack { grid-template-columns: 1fr; }
+      .tools { grid-template-columns: 1fr 1fr; }
+      .footnote { flex-direction: column; }
+      .enter-hint { display: none; }
+      .terminal-output { font-size: 10px; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+    }
+  </style>
+</head>
+<body>
+  <canvas id="rain" aria-hidden="true"></canvas>
+  <div class="scanlines" aria-hidden="true"></div>
+  <main class="shell">
+    <div class="creator">Created by Student #097</div>
+    <header class="topbar">
+      <div class="brand">
+        <div class="brand-mark" aria-hidden="true">⌁</div>
+        <div><div class="brand-name">SECRET AGENT: TERMINAL ZERO</div><div class="brand-sub">FIELD INTERFACE // V.04.2</div></div>
+      </div>
+      <div class="top-actions">
+        <div class="status-pill"><span class="dot"></span> SIMULATION ONLINE</div>
+        <button class="icon-button" id="soundButton" aria-label="Turn sound on" title="Sound off">♫</button>
+        <button class="btn" id="clearButton" title="Clear terminal">Reset <span aria-hidden="true">↺</span></button>
+      </div>
+    </header>
+
+    <section class="hero">
+      <div>
+        <div class="eyebrow">Secure channel established</div>
+        <h1>Welcome back, <span>Agent.</span></h1>
+        <p class="lede">Your sandbox is ready. Complete the mission briefing, watch the signal indicators move, and uncover the classified cipher.</p>
+      </div>
+      <div class="simulation-tag">◈ &nbsp;FICTIONAL TRAINING SIMULATION</div>
+    </section>
+
+    <section class="dashboard" aria-label="Agent terminal dashboard">
+      <section class="panel terminal" aria-label="Simulation terminal">
+        <div class="panel-head">
+          <div class="panel-title"><span class="glyph">▣</span> Mission console</div>
+          <div class="panel-meta">LOCAL SANDBOX · NO NETWORK</div>
+        </div>
+        <div class="terminal-output" id="output" role="log" aria-live="polite" aria-relevant="additions"></div>
+        <form class="prompt-row" id="commandForm">
+          <label class="prompt" for="command">agent@ghost:~$</label>
+          <input id="command" autocomplete="off" spellcheck="false" placeholder="type help to see available commands">
+          <span class="enter-hint">ENTER ↵</span>
+        </form>
+      </section>
+
+      <div class="right-stack">
+        <section class="panel">
+          <div class="panel-head"><div class="panel-title"><span class="glyph">◉</span> Mission briefing</div><div class="panel-meta">OPERATION ZERO</div></div>
+          <div class="mission-body">
+            <p class="mission-copy">Recover the training packet by scanning the signal, decoding its message, and solving the hidden cipher.</p>
+            <div class="metric-label"><span>MISSION PROGRESS</span><span class="metric-value" id="missionValue">0%</span></div>
+            <div class="bar cyan" role="progressbar" aria-label="Mission progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><i id="missionBar" style="width:0%"></i></div>
+            <div class="mission-steps" aria-live="polite">
+              <div class="mission-step" id="stepScan"><span class="step-icon">○</span> Run signal scan</div>
+              <div class="mission-step" id="stepDecrypt"><span class="step-icon">○</span> Decode training packet</div>
+              <div class="mission-step" id="stepCipher"><span class="step-icon">○</span> Solve classified cipher</div>
+            </div>
+            <button class="btn mission-start" id="missionButton" type="button">Begin mission <span aria-hidden="true">↗</span></button>
+          </div>
+        </section>
+        <section class="panel">
+          <div class="panel-head"><div class="panel-title"><span class="glyph">◈</span> Simulation tools</div><div class="panel-meta">4 MODULES</div></div>
+          <div class="tools">
+            <button class="tool" data-command="scan" style="--tool-color:var(--green)"><span class="tool-icon">⌕</span><span class="tool-name">SIGNAL SCAN</span><span class="tool-desc">Map a fictional signal</span></button>
+            <button class="tool" data-command="decrypt" style="--tool-color:var(--cyan)"><span class="tool-icon">⌘</span><span class="tool-name">DECRYPT</span><span class="tool-desc">Decode a training packet</span></button>
+            <button class="tool" data-command="trace" style="--tool-color:var(--purple)"><span class="tool-icon">⌁</span><span class="tool-name">TRACE PING</span><span class="tool-desc">Follow a fake beacon</span></button>
+            <button class="tool" data-command="cipher" style="--tool-color:#ffd27a"><span class="tool-icon">?</span><span class="tool-name">CLASSIFIED</span><span class="tool-desc">Open hidden cipher game</span></button>
+          </div>
+        </section>
+        <section class="panel">
+          <div class="panel-head"><div class="panel-title"><span class="glyph">▤</span> Live telemetry</div><div class="panel-meta">SIMULATED</div></div>
+          <div class="metrics">
+            <div class="metric"><div class="metric-label"><span>ENCRYPTION DECODED</span><span class="metric-value" id="decodeValue">08%</span></div><div class="bar"><i id="decodeBar" style="width:8%"></i></div></div>
+            <div class="metric"><div class="metric-label"><span>SIGNAL STRENGTH</span><span class="metric-value" id="signalValue">42%</span></div><div class="bar cyan"><i id="signalBar" style="width:42%"></i></div></div>
+            <div class="metric"><div class="metric-label"><span>STEALTH COVER</span><span class="metric-value" id="stealthValue">76%</span></div><div class="bar purple"><i id="stealthBar" style="width:76%"></i></div></div>
+          </div>
+          <div class="signal"><span>CHANNEL STATUS</span><b id="channelStatus">STANDING BY</b></div>
+        </section>
+      </div>
+    </section>
+    <footer class="footnote"><span><strong>TRAINING MODE</strong> &nbsp; All actions are fictional and run only in this page.</span><span>TIP: try <strong>help</strong> · type <strong>cipher</strong> to reveal the game</span></footer>
+  </main>
+
+  <div class="modal-wrap" id="cipherModal" role="dialog" aria-modal="true" aria-labelledby="cipherTitle">
+    <div class="modal">
+      <div class="modal-top"><span class="eyebrow">Encrypted training packet</span><button class="close-button" id="closeCipher" aria-label="Close cipher game">×</button></div>
+      <h2 id="cipherTitle">CLASSIFIED // 01</h2>
+      <p>A shift cipher has scrambled the keyword. Each letter moved <strong>3 places forward</strong> in the alphabet. Move each one back to reveal the answer.</p>
+      <div class="cipher-text" aria-label="Cipher text">PLGQLJKW</div>
+      <label class="eyebrow" for="cipherAnswer">ENTER DECODED WORD</label>
+      <form class="cipher-entry" id="cipherForm"><input id="cipherAnswer" autocomplete="off" placeholder="your answer" aria-label="Decoded word"><button class="btn" type="submit">Submit ↗</button></form>
+      <div class="cipher-feedback" id="cipherFeedback" aria-live="polite"></div>
+    </div>
+  </div>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script>
+    // The alphabet is a tiny running track: letters jog back by shift spots, then hop the fence from A to Z.
+    function decodeMessage(message, shift) {
+      if (typeof message !== "string") return "";
+      const numericShift = Number(shift);
+      const safeShift = Number.isFinite(numericShift) ? Math.trunc(numericShift) : 0;
+      const normalizedShift = ((safeShift % 26) + 26) % 26;
+      return Array.from(message, character => {
+        const code = character.charCodeAt(0);
+        const base = code >= 65 && code <= 90 ? 65 : code >= 97 && code <= 122 ? 97 : 0;
+        if (!base) return character;
+        return String.fromCharCode(((code - base - normalizedShift + 26) % 26) + base);
+      }).join("");
+    }
+    console.assert(decodeMessage("Khoor, Zruog!", 3) === "Hello, World!" && decodeMessage("same", 0) === "same", "normal input and zero shift");
+    console.assert(decodeMessage("", 3) === "", "empty input");
+    console.assert(decodeMessage("F", -1) === "G", "negative shift wraps forward");
+
+    (() => {
+      "use strict";
+      const output = document.getElementById("output");
+      const commandInput = document.getElementById("command");
+      const channelStatus = document.getElementById("channelStatus");
+      const modal = document.getElementById("cipherModal");
+      const toast = document.getElementById("toast");
+      let soundOn = false;
+      let audioContext;
+      let toastTimer;
+      const metrics = { decode: 8, signal: 42, stealth: 76 };
+      const MAX_LINES = 80;
+
+      function addLine(text, type = "") {
+        const line = document.createElement("div");
+        line.className = `line ${type}`;
+        line.textContent = text;
+        output.appendChild(line);
+        while (output.children.length > MAX_LINES) output.removeChild(output.firstChild);
+        output.scrollTop = output.scrollHeight;
+      }
+      function toastMessage(text) {
+        toast.textContent = text;
+        toast.classList.add("show");
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => toast.classList.remove("show"), 2500);
+      }
+      function playTone(frequency = 600, duration = .055, type = "sine") {
+        if (!soundOn) return;
+        try {
+          audioContext ||= new (window.AudioContext || window.webkitAudioContext)();
+          const oscillator = audioContext.createOscillator();
+          const gain = audioContext.createGain();
+          oscillator.type = type;
+          oscillator.frequency.value = frequency;
+          gain.gain.setValueAtTime(.035, audioContext.currentTime);
+          gain.gain.exponentialRampToValueAtTime(.001, audioContext.currentTime + duration);
+          oscillator.connect(gain).connect(audioContext.destination);
+          oscillator.start();
+          oscillator.stop(audioContext.currentTime + duration);
+        } catch (_) { /* Sound is optional; the app still works without Web Audio. */ }
+      }
+      function setMetric(key, value) {
+        metrics[key] = Math.max(0, Math.min(100, value));
+        const label = document.getElementById(`${key}Value`);
+        const bar = document.getElementById(`${key}Bar`);
+        label.textContent = `${Math.round(metrics[key])}%`;
+        bar.style.width = `${metrics[key]}%`;
+      }
+      const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
+      const missionTasks = { scan: false, decrypt: false, cipher: false };
+      let missionStarted = false;
+      function startMission() {
+        if (missionStarted) return;
+        missionStarted = true;
+        document.getElementById("missionButton").textContent = "Mission active · keep going";
+        channelStatus.textContent = "MISSION ACTIVE";
+        addLine("Operation Zero started. Scan, decode, then solve the cipher.", "accent");
+        playTone(620, .09);
+      }
+      function recordMissionTask(task) {
+        if (!missionStarted || missionTasks[task]) return;
+        missionTasks[task] = true;
+        const step = document.getElementById(`step${task[0].toUpperCase()}${task.slice(1)}`);
+        step.classList.add("done");
+        step.querySelector(".step-icon").textContent = "✓";
+        const progress = Math.round(Object.values(missionTasks).filter(Boolean).length / 3 * 100);
+        document.getElementById("missionValue").textContent = `${progress}%`;
+        document.getElementById("missionBar").style.width = `${progress}%`;
+        document.querySelector('[role="progressbar"][aria-label="Mission progress"]').setAttribute("aria-valuenow", String(progress));
+        if (progress === 100) {
+          channelStatus.textContent = "MISSION COMPLETE";
+          addLine("Operation Zero complete. Training packet recovered.", "success");
+          toastMessage("Mission complete — well done, Agent");
+        }
+      }
+      async function runCommand(rawCommand) {
+        const command = rawCommand.trim().toLowerCase();
+        if (!command) return;
+        addLine(`agent@ghost:~$ ${command}`, "system");
+        playTone(480, .04);
+        switch (command) {
+          case "help":
+            addLine("AVAILABLE COMMANDS", "accent");
+            addLine("  help     — list simulated commands");
+            addLine("  mission  — begin Operation Zero");
+            addLine("  scan     — map a fictional signal");
+            addLine("  decrypt  — decode a training packet");
+            addLine("  trace    — follow a fake beacon");
+            addLine("  cipher   — open the hidden mini-game");
+            addLine("  clear    — clear the mission console");
+            addLine("No real systems, files, or networks are accessed.", "system");
+            break;
+          case "mission":
+            startMission();
+            break;
+          case "scan":
+            channelStatus.textContent = "SCANNING";
+            addLine("Starting local signal scan…", "accent");
+            await wait(420);
+            addLine("[SIM] 3 fictional signal markers found.", "success");
+            addLine("[SIM] Relay Echo · 18.4° / training grid", "system");
+            addLine("[SIM] No external connection attempted.", "system");
+            setMetric("signal", Math.min(100, metrics.signal + 19));
+            setMetric("stealth", Math.max(12, metrics.stealth - 3));
+            recordMissionTask("scan");
+            channelStatus.textContent = "SIGNAL MAPPED";
+            playTone(720, .08);
+            break;
+          case "decrypt":
+            channelStatus.textContent = "DECODING";
+            addLine("Unpacking fictional training packet…", "accent");
+            await wait(300);
+            setMetric("decode", Math.min(100, metrics.decode + 24));
+            addLine("[SIM] Packet decoded: “The quietest signal carries the clearest message.”", "success");
+            addLine("[SIM] This result is prewritten training text.", "system");
+            recordMissionTask("decrypt");
+            channelStatus.textContent = "PACKET DECODED";
+            playTone(840, .1);
+            break;
+          case "trace":
+            channelStatus.textContent = "FOLLOWING BEACON";
+            addLine("Following a simulated beacon through the training grid…", "accent");
+            await wait(500);
+            addLine("[SIM] Beacon source: Training Node 07.", "success");
+            addLine("[SIM] Trace ends here. No real address was looked up.", "system");
+            setMetric("signal", Math.min(100, metrics.signal + 11));
+            setMetric("stealth", Math.min(100, metrics.stealth + 5));
+            channelStatus.textContent = "BEACON FOUND";
+            playTone(660, .09);
+            break;
+          case "cipher":
+            addLine("A classified training packet is ready.", "warn");
+            modal.classList.add("open");
+            document.getElementById("cipherAnswer").focus();
+            channelStatus.textContent = "PUZZLE UNLOCKED";
+            playTone(700, .1, "triangle");
+            break;
+          case "clear":
+            output.replaceChildren();
+            addLine("Console cleared. Simulation state preserved.", "system");
+            break;
+          default:
+            addLine(`Unknown command: ${command}. Type "help" to see the available commands.`, "error");
+        }
+      }
+      document.getElementById("commandForm").addEventListener("submit", event => {
+        event.preventDefault();
+        const value = commandInput.value;
+        commandInput.value = "";
+        void runCommand(value);
+      });
+      document.getElementById("missionButton").addEventListener("click", startMission);
+      document.querySelectorAll(".tool").forEach(button => {
+        button.addEventListener("click", () => {
+          button.animate([{ transform: "scale(1)" }, { transform: "scale(.96)" }, { transform: "scale(1)" }], { duration: 220, easing: "ease-out" });
+          void runCommand(button.dataset.command);
+        });
+      });
+      document.getElementById("clearButton").addEventListener("click", () => {
+        output.replaceChildren();
+        channelStatus.textContent = "STANDING BY";
+        Object.entries({ decode: 8, signal: 42, stealth: 76 }).forEach(([key, value]) => setMetric(key, value));
+        missionStarted = false;
+        Object.keys(missionTasks).forEach(task => { missionTasks[task] = false; });
+        ["scan", "decrypt", "cipher"].forEach(task => {
+          const step = document.getElementById(`step${task[0].toUpperCase()}${task.slice(1)}`);
+          step.classList.remove("done");
+          step.querySelector(".step-icon").textContent = "○";
+        });
+        document.getElementById("missionValue").textContent = "0%";
+        document.getElementById("missionBar").style.width = "0%";
+        document.querySelector('[role="progressbar"][aria-label="Mission progress"]').setAttribute("aria-valuenow", "0");
+        document.getElementById("missionButton").innerHTML = 'Begin mission <span aria-hidden="true">↗</span>';
+        addLine("Terminal Zero training console reset.", "system");
+        addLine("All tools are fictional simulations. Type help to begin.", "accent");
+        playTone(400, .06);
+      });
+      document.getElementById("soundButton").addEventListener("click", event => {
+        soundOn = !soundOn;
+        event.currentTarget.setAttribute("aria-label", soundOn ? "Turn sound off" : "Turn sound on");
+        event.currentTarget.title = soundOn ? "Sound on" : "Sound off";
+        event.currentTarget.textContent = soundOn ? "♫" : "♩";
+        toastMessage(soundOn ? "Sound effects enabled" : "Sound effects muted");
+        playTone(550, .07);
+      });
+      function closeModal() { modal.classList.remove("open"); }
+      document.getElementById("closeCipher").addEventListener("click", closeModal);
+      modal.addEventListener("click", event => { if (event.target === modal) closeModal(); });
+      document.addEventListener("keydown", event => { if (event.key === "Escape") closeModal(); });
+      document.getElementById("cipherForm").addEventListener("submit", event => {
+        event.preventDefault();
+        const answer = document.getElementById("cipherAnswer").value.trim().toUpperCase();
+        const feedback = document.getElementById("cipherFeedback");
+        if (answer === decodeMessage("PLGQLJKW", 3)) {
+          feedback.textContent = "ACCESS GRANTED — cipher solved. Excellent work, Agent.";
+          feedback.style.color = "var(--green)";
+          setMetric("decode", 100);
+          channelStatus.textContent = "CIPHER SOLVED";
+          recordMissionTask("cipher");
+          playTone(960, .18, "triangle");
+          toastMessage("Cipher solved — training packet complete");
+        } else {
+          feedback.textContent = "Not quite. Shift each letter back by 3.";
+          feedback.style.color = "var(--danger)";
+          playTone(230, .1, "square");
+        }
+      });
+
+      addLine("Ghost Protocol training console initialized.", "system");
+      addLine("Everything here is a local, fictional simulation.", "system");
+      addLine("Type help for commands — or try the classified module.", "accent");
+
+      // Decorative falling code. It is visual only and does not read or transmit data.
+      const canvas = document.getElementById("rain");
+      const ctx = canvas.getContext("2d");
+      const glyphs = "01アイウエオカキクケコサシスセソ";
+      let drops = [];
+      let width = 0, height = 0, frame = 0;
+      function resizeCanvas() {
+        const dpr = Math.min(window.devicePixelRatio || 1, 2);
+        width = window.innerWidth;
+        height = window.innerHeight;
+        canvas.width = Math.floor(width * dpr);
+        canvas.height = Math.floor(height * dpr);
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        drops = Array.from({ length: Math.ceil(width / 19) }, () => Math.random() * height / 14);
+      }
+      function drawRain() {
+        if (document.hidden) { requestAnimationFrame(drawRain); return; }
+        frame++;
+        if (frame % 2 === 0) {
+          ctx.fillStyle = "rgba(5, 8, 13, .14)";
+          ctx.fillRect(0, 0, width, height);
+          ctx.font = "12px monospace";
+          drops.forEach((drop, index) => {
+            const char = glyphs[Math.floor(Math.random() * glyphs.length)];
+            ctx.fillStyle = Math.random() > .96 ? "#b0ffd5" : "#35d98b";
+            ctx.fillText(char, index * 19, drop * 14);
+            if (drop * 14 > height && Math.random() > .975) drops[index] = 0;
+            drops[index] += .48;
+          });
+        }
+        requestAnimationFrame(drawRain);
+      }
+      window.addEventListener("resize", resizeCanvas);
+      resizeCanvas();
+      drawRain();
+    })();
+  </script>
+</body>
+</html>
