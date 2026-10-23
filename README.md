@@ -7,7 +7,7 @@ An interactive, single-file training terminal made with HTML, CSS, and vanilla J
 - **Student name:** Alina Patel
 - **Student number:** 150096726013
 - **GitHub repository:** https://github.com/alina22052007/Secret-Agent-Hacker
-- **GitHub Pages URL:** [Add your GitHub Pages URL here after enabling Pages]
+- **GitHub Pages URL:**(https://alina22052007.github.io/Secret-Agent-Hacker/)
 
 ## Features
 
