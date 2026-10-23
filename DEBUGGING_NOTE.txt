@@ -1,0 +1,26 @@
+SECRET AGENT: TERMINAL ZERO — DEBUGGING NOTE
+
+The app is a self-contained index.html. Its CSS and JavaScript are inline, so it does not need a server, framework, package installation, backend, or network service.
+
+DECODER CHECKS
+The page runs exactly three console.assert() checks when it loads:
+1. Normal text decoding and an unchanged message at shift zero.
+2. Empty input.
+3. A negative shift.
+Open the browser developer console (F12 or Ctrl+Shift+J; on macOS, Option+Command+J). A failed assertion appears as an error. No assertion error means those checks did not fail. The zero-shift behavior is included in the first assertion.
+
+TRY THE APP
+1. Type help in the terminal to see commands.
+2. Select Begin mission or type mission.
+3. Run scan, then decrypt.
+4. Type cipher or use the Classified tool. The clue says to move each letter back by 3; submit MIDNIGHT.
+5. The mission bar should reach 100% after all three mission steps are completed.
+
+COMMON ISSUES
+- If the page appears unstyled, make sure you opened index.html rather than a text preview.
+- If sound is silent, enable sound with the music button; browsers require a user click before playing generated audio.
+- If the falling-code background is not animated, check that JavaScript is enabled. The terminal and mission do not depend on sound.
+- If GitHub Pages shows a 404, confirm that index.html is at the repository root and Pages is configured for the correct branch and root folder.
+- If a GitHub Pages URL is wrong, use the URL shown in the repository's Settings → Pages page.
+
+All terminal actions are local fictional simulations; they do not contact external systems.

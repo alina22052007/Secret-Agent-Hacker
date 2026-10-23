@@ -1,0 +1,22 @@
+SECRET AGENT: TERMINAL ZERO — CODE EXPLANATION
+
+FILE STRUCTURE
+index.html contains the complete app:
+- HTML provides the terminal, mission briefing, telemetry, tool buttons, cipher dialog, and status messages.
+- The inline CSS defines the dark neon visual theme, responsive layout, button states, progress bars, and falling-code presentation.
+- Vanilla JavaScript handles terminal commands, mission state, cipher checking, optional sound effects, and the decorative canvas animation.
+
+DECODER
+decodeMessage(message, shift) is a Caesar-shift decoder. For each English letter, it subtracts the normalized shift from that letter's alphabet position. Modulo 26 wraps values around the alphabet, including negative shifts. Uppercase and lowercase letters stay in their original case; punctuation and other non-English characters pass through unchanged. Empty text returns an empty string, and a shift of zero leaves text unchanged.
+
+The short alphabet-track analogy comment is immediately above the function. Exactly three console.assert() calls check normal text (including a zero shift), empty text, and a negative shift.
+
+INTERACTION
+- The terminal accepts help, mission, scan, decrypt, trace, cipher, and clear.
+- The mission begins only after the user selects Begin mission or enters mission. Completing scan, decrypt, and the cipher updates its three steps and progress bar.
+- The hidden cipher opens from the Classified tool or the cipher command. Its answer is decoded with decodeMessage before it is checked.
+- The telemetry bars change in response to the simulation actions. Reset restores the initial values and mission state.
+- Sound is generated locally with the browser's Web Audio API and is off until enabled.
+- The background canvas draws decorative characters only. It does not read or transmit user input.
+
+The page uses no framework, external assets, API calls, or backend, so it can be served directly from a GitHub Pages repository.
